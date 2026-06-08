@@ -1,102 +1,80 @@
 import React, { useState } from 'react';
-import { verifyPassword, setRole, setAdminHash, sha256 } from '../utils.js';
+import { verifyPassword, setSessionHash, sha256 } from '../utils/storage';
 
-export default function LoginPage({ role, onSuccess, onBack }) {
-  const [pwd,   setPwd]   = useState('');
-  const [err,   setErr]   = useState('');
+export default function LoginPage({ mode, onSuccess, onBack }) {
+  const [pwd,     setPwd]     = useState('');
+  const [showPwd, setShowPwd] = useState(false);
+  const [err,     setErr]     = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const isAdmin = role === 'admin';
+  const isAdmin  = mode === 'admin';
+  const icon     = isAdmin ? '⚙️' : '📊';
+  const title    = isAdmin ? 'Espace Administration' : 'Espace Visualisation';
+  const subtitle = isAdmin
+    ? 'Saisissez le mot de passe administrateur'
+    : 'Saisissez le mot de passe pour accéder aux tableaux de bord du programme GAVI';
 
-  const handleSubmit = async () => {
-    if (!pwd.trim()) return;
-    setLoading(true);
-    setErr('');
+  const doLogin = async () => {
+    if (!pwd.trim() || loading) return;
+    setLoading(true); setErr(false);
     try {
-      const ok = await verifyPassword(role, pwd.trim());
+      const ok = await verifyPassword(mode, pwd.trim());
       if (ok) {
-        setRole(role);
-        if (isAdmin) {
-          const h = await sha256(pwd.trim());
-          setAdminHash(h);
-        }
-        onSuccess(role);
+        if (isAdmin) { const h = await sha256(pwd.trim()); setSessionHash(h); }
+        onSuccess(mode);
       } else {
-        setErr('⚠ Mot de passe incorrect. Veuillez réessayer.');
-        setPwd('');
+        setErr(true); setPwd('');
       }
-    } catch {
-      setErr('Erreur de vérification. Réessayez.');
-    } finally {
-      setLoading(false);
-    }
+    } finally { setLoading(false); }
   };
 
   return (
-    <div style={{
-      flex: 1, display: 'flex', flexDirection: 'column',
-      alignItems: 'center', justifyContent: 'center',
-      padding: '48px 24px',
-      background: 'linear-gradient(160deg, #ffffff 0%, #edf3f8 60%, #dce8f2 100%)',
-    }}>
-      {/* Logos */}
-      <div style={{ display:'flex', alignItems:'center', gap:16, marginBottom:36 }}>
-        <img src="/logos/ugp.png"  alt="UGP"  style={{ height:44, objectFit:'contain' }} />
-        <img src="/logos/gavi.png" alt="GAVI" style={{ height:28, objectFit:'contain' }} />
+    <div className="login-wrap">
+      {/* Mini logos */}
+      <div style={{ display:'flex', alignItems:'center', gap:12, marginBottom:32 }} className="fade-up">
+        <img src="/logos/ugp.png"  alt="UGP"  height={36} style={{ objectFit:'contain' }} />
+        <img src="/logos/gavi.png" alt="GAVI" height={24} style={{ objectFit:'contain' }} />
       </div>
 
-      <div style={{
-        background: 'var(--surface)', border: '1px solid var(--br)',
-        borderRadius: 'var(--r-xl)', padding: '32px 36px',
-        width: '100%', maxWidth: 380,
-        boxShadow: 'var(--sh-lg)',
-      }}>
-        <div style={{ marginBottom: 24 }}>
-          <div style={{ fontFamily:'var(--f-mono)', fontSize:9.5, color:'var(--t-dim)', textTransform:'uppercase', letterSpacing:'.12em', marginBottom:8 }}>
-            {isAdmin ? 'Espace Administration' : 'Accès Visiteur'}
-          </div>
-          <h2 style={{ fontFamily:'var(--f-display)', fontSize:20, fontWeight:600, color:'var(--navy)' }}>
-            {isAdmin ? 'Mot de passe Admin' : 'Mot de passe Visiteur'}
-          </h2>
+      <div className="login-box fade-up-1">
+        <button className="login-back" onClick={onBack}>← Retour</button>
+
+        <div className="login-icon">{icon}</div>
+        <div className="login-title">{title}</div>
+        <div className="login-sub">{subtitle}</div>
+
+        <div className="input-wrap">
+          <input
+            className={`pw-input${err ? ' error' : ''}`}
+            type={showPwd ? 'text' : 'password'}
+            placeholder="Mot de passe"
+            value={pwd}
+            onChange={e => { setPwd(e.target.value); setErr(false); }}
+            onKeyDown={e => e.key === 'Enter' && doLogin()}
+            autoFocus
+          />
+          <button className="eye-btn" onClick={() => setShowPwd(v => !v)} type="button">
+            {showPwd ? '🙈' : '👁'}
+          </button>
         </div>
 
-        <input
-          type="password"
-          value={pwd}
-          onChange={e => setPwd(e.target.value)}
-          onKeyDown={e => e.key === 'Enter' && handleSubmit()}
-          placeholder="••••••••••••"
-          style={{ width:'100%', padding:'10px 14px', marginBottom:16, fontSize:14 }}
-          autoFocus
-        />
-
         {err && (
-          <div style={{ background:'var(--danger-light)', color:'var(--danger)', border:'1px solid #de9aa0', borderRadius:'var(--r-m)', padding:'8px 12px', fontSize:12, marginBottom:14 }}>
-            {err}
+          <div className="err-msg show">
+            Mot de passe incorrect. Veuillez réessayer.
           </div>
         )}
 
         <button
-          onClick={handleSubmit}
-          disabled={loading || !pwd.trim()}
-          style={{
-            width: '100%', padding: '11px',
-            background: isAdmin ? 'var(--navy)' : 'var(--teal)',
-            color: '#fff', border: 'none',
-            borderRadius: 'var(--r-m)', fontSize: 13, fontWeight: 600,
-            opacity: loading || !pwd.trim() ? .6 : 1,
-            transition: 'opacity .2s',
-          }}
+          className="login-btn"
+          onClick={doLogin}
+          disabled={!pwd.trim() || loading}
         >
-          {loading ? 'Vérification…' : 'Connexion'}
+          {loading ? 'Vérification…' : 'ACCÉDER →'}
         </button>
 
-        <button
-          onClick={onBack}
-          style={{ marginTop:14, width:'100%', padding:'8px', background:'none', border:'none', color:'var(--t-dim)', fontSize:12 }}
-        >
-          ← Retour
-        </button>
+        <div className="login-footer">
+          SESSION SÉCURISÉE · EXPIRE À LA FERMETURE DE L'ONGLET
+        </div>
       </div>
     </div>
   );
