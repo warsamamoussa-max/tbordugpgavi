@@ -9,17 +9,21 @@ on:
 jobs:
   build:
     strategy:
+      fail-fast: false
       matrix:
         include:
           - os: windows-latest
             script: dist:win
-          - os: macos-latest
+          - os: macos-13
             script: dist:mac
     runs-on: ${{ matrix.os }}
 
     defaults:
       run:
         working-directory: electron-app
+
+    env:
+      CSC_IDENTITY_AUTO_DISCOVERY: false
 
     steps:
       - name: Checkout
@@ -28,13 +32,25 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
 
       - name: Install dependencies
         run: npm install
 
-      - name: Build (${{ matrix.os }})
-        run: npm run ${{ matrix.script }}
+      - name: Build (${{ matrix.os }}) with retry
+        shell: bash
+        run: |
+          for attempt in 1 2 3; do
+            echo "Tentative $attempt..."
+            if npm run ${{ matrix.script }}; then
+              echo "Build reussi"
+              exit 0
+            fi
+            echo "Echec tentative $attempt, nouvelle tentative dans 10s..."
+            sleep 10
+          done
+          echo "Echec apres 3 tentatives"
+          exit 1
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
