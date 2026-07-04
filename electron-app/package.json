@@ -1,0 +1,57 @@
+{
+  "name": "ugp-gavi-dashboard",
+  "version": "1.0.0",
+  "description": "UGP-GAVI Dashboard - Suivi du PTA GAVI 2026 (MSP Djibouti)",
+  "main": "main.js",
+  "author": "UGP-GAVI",
+  "license": "UNLICENSED",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win --mac",
+    "dist:win": "electron-builder --win",
+    "dist:mac": "electron-builder --mac"
+  },
+  "devDependencies": {
+    "electron": "^31.0.0",
+    "electron-builder": "^24.13.3"
+  },
+  "build": {
+    "appId": "dj.gouv.msp.ugpgavi.dashboard",
+    "productName": "UGP-GAVI Dashboard",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "main.js",
+      "package.json",
+      "build/icon.png"
+    ],
+    "win": {
+      "target": [
+        { "target": "nsis", "arch": ["x64"] }
+      ],
+      "icon": "build/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "UGP-GAVI Dashboard"
+    },
+    "mac": {
+      "target": [
+        { "target": "dmg", "arch": ["x64", "arm64"] }
+      ],
+      "icon": "build/icon.icns",
+      "category": "public.app-category.productivity",
+      "hardenedRuntime": false,
+      "gatekeeperAssess": false
+    },
+    "dmg": {
+      "title": "UGP-GAVI Dashboard"
+    }
+  }
+}
